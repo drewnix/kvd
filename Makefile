@@ -1,7 +1,7 @@
 
 build:
-	go fmt .
-	go build -o kvd main.go
+	go fmt ./...
+	go build -o kv main.go
 
 run:
 	go run main.go
@@ -15,5 +15,5 @@ test-cover:
 	go tool cover -html coverage.out
 
 clean:
-	rm kvd
+	rm kv
 	rm coverage.out

@@ -1,5 +1,7 @@
 *.*~
+kv
 devel/*
+.idea
 
 # OSX
 .DS_Store
