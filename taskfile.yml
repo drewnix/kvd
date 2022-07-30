@@ -1,0 +1,33 @@
+version: '3'
+
+tasks:
+  build:
+    cmds:
+      - go fmt ./...
+      - go build -o wineapi src/main.go
+
+  test:
+    cmds:
+      - go test -v ./...
+
+  test-cover:
+    cmds:
+      - go test -cover -v ./...
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -html coverage.out
+
+  clean:
+    cmds:
+      - cmd: rm wineapi
+        ignore_error: true
+      - cmd: rm coverage.out
+        ignore_error: true
+
+  build-docker:
+    cmds:
+      - docker build -t wineapi:latest .
+
+  run-docker:
+    cmds:
+      - task: build-docker
+      - docker run -p 4000:4000 wineapi:latest
