@@ -3,9 +3,10 @@ package kvcli
 import (
 	"context"
 	"fmt"
+	"os"
+
 	"github.com/drewnix/kvd/pkg/kvd"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 func startService() {

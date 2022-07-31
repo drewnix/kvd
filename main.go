@@ -1,6 +1,6 @@
 package main
 
-import "github.com/drewnix/kvd/cmd/kvcli"
+import kvcli "github.com/drewnix/kvd/cmd"
 
 func main() {
 	kvcli.Execute()
