@@ -12,10 +12,10 @@ type DB struct {
 }
 
 type Metrics struct {
-	KeysStored int `json:"keysStored"`
-	GetOps     int `json:"getOps"`
-	SetOps     int `json:"setOps"`
-	DelOps     int `json:"delOps"`
+	KeysStored int `json:"KeysStored"`
+	GetOps     int `json:"GetOps"`
+	SetOps     int `json:"SetOps"`
+	DelOps     int `json:"DelOps"`
 }
 
 var (
@@ -51,9 +51,13 @@ func (db *DB) Get(key string) (string, error) {
 
 func (db *DB) Set(key string, value string) error {
 	db.mutex.Lock()
+	defer db.mutex.Unlock()
+	_, existing := db.store[key]
 	db.store[key] = value
 	db.metrics.SetOps++
-	db.mutex.Unlock()
+	if !existing {
+		db.metrics.KeysStored++
+	}
 
 	return nil
 }
@@ -62,8 +66,12 @@ func (db *DB) BulkSet(records []Record) error {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 	for _, r := range records {
+		_, existing := db.store[r.Key]
 		db.store[r.Key] = r.Value
 		db.metrics.SetOps++
+		if !existing {
+			db.metrics.KeysStored++
+		}
 	}
 
 	return nil

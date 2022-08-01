@@ -8,6 +8,8 @@ Major features:
   straightforward API.
 * CLI `kv` built using Cobra CLI framework offering the ability to set, 
   get, or delete one or many keys in the key store.
+* Metrics subsystem presents: keys stored, # set ops, # get ops, # delete 
+  ops, and size of total data stored in the key, value store.
 
 To Build:
 
@@ -41,6 +43,8 @@ Delete Operations: 3
 Tests pass, but currently service needs to be running.
 
 ```bash
+$ ./kv serve &
+$ make test
 ```
 
 ### Deliverables:
@@ -73,6 +77,8 @@ Tests pass, but currently service needs to be running.
 
 ### TODO
 
+* [ ] Add accounting for deletion of values
+* [ ] If deletion on invalid key return ErrInvalidKey
 * [ ] Stats - Track size of all values
   * [ ] On load track size of added?
   * [ ] On delete remove size of added?
