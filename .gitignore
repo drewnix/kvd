@@ -2,6 +2,7 @@
 kv
 devel/*
 .idea
+.vscode
 
 # OSX
 .DS_Store

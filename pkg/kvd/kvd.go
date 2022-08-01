@@ -205,7 +205,6 @@ func (kvd *Kvd) keyManyGetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.Unmarshal(body, &query); err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		if err := json.NewEncoder(w).Encode(err); err != nil {
 			http.Error(w, http.StatusText(http.StatusUnprocessableEntity), http.StatusUnprocessableEntity)
 			return
@@ -219,17 +218,16 @@ func (kvd *Kvd) keyManyGetHandler(w http.ResponseWriter, r *http.Request) {
 			http.StatusInternalServerError)
 		return
 	}
-
-	//j, err := json.Marshal(recs)
-
 	data, err := kvd.toJSON(recs)
+	if err != nil {
+		fmt.Println("Could not convert to JSON: ", err)
+		return
+	}
 	w.Header().Add("Content-Type", "application/json")
 	_, err = w.Write(data)
 	if err != nil {
 		return
 	}
-
-	w.WriteHeader(http.StatusOK) // All good! Return StatusOK
 }
 
 // keyValuePutHandler expects to be called with a PUT request for
@@ -284,7 +282,7 @@ func (kvd *Kvd) StartService(ctx context.Context) (context.Context, error) {
 	//router.HandleFunc("/status", kvd.getStatus).Methods("GET")
 	router.HandleFunc("/v1/", kvd.keyManyPutHandler).Methods("PUT")
 	router.HandleFunc("/v1/", kvd.keyManyGetHandler).Methods("GET")
-	router.HandleFunc("/v1/", kvd.keyManyDeletesHandler).Methods("GET")
+	router.HandleFunc("/v1/", kvd.keyManyDeletesHandler).Methods("DELETE")
 	router.HandleFunc("/v1/{key}", kvd.keyPutHandler).Methods("PUT")
 	router.HandleFunc("/v1/{key}", kvd.keyGetHandler).Methods("GET")
 	router.HandleFunc("/v1/{key}", kvd.keyDeleteHandler).Methods("DELETE")

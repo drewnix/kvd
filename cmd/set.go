@@ -2,10 +2,11 @@ package kvcli
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/drewnix/kvd/pkg/kvcli"
 	"github.com/drewnix/kvd/pkg/kvd"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 func SetCmd() *cobra.Command {
@@ -18,7 +19,6 @@ func SetCmd() *cobra.Command {
 			sets := make([]kvd.Record, argsLen)
 
 			for i, s := range args {
-				fmt.Println(s)
 				a := strings.Split(s, "=")
 
 				var rec = kvd.Record{
@@ -27,11 +27,9 @@ func SetCmd() *cobra.Command {
 				}
 
 				sets[i] = rec
-				fmt.Println(a)
 			}
-			fmt.Println(sets)
-			fmt.Println("Executing SetKeys()s")
 			kvcli.SetKeys(sets)
+			fmt.Println("Keys set")
 			return nil
 		},
 	}

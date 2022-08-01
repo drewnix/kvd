@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/drewnix/kvd/pkg/kvd"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/drewnix/kvd/pkg/kvd"
 )
 
 func GetKey(key string) (result string) {
@@ -55,14 +56,11 @@ func GetKeys(gets []string) []kvd.Record {
 		log.Fatal(readErr)
 	}
 
-	fmt.Println(resp.StatusCode)
-
 	return records
 }
 
 func DeleteKeys(dels []string) []kvd.Record {
 	var url = "http://localhost:4000/v1/"
-	var records []kvd.Record = make([]kvd.Record, 0)
 
 	j, err := json.Marshal(dels)
 	if err != nil {
@@ -74,39 +72,41 @@ func DeleteKeys(dels []string) []kvd.Record {
 	// set the HTTP method, url, and request body
 	req, err := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(j))
 	if err != nil {
-		panic(err)
+		fmt.Println("Error creating request: ", err)
+		log.Fatal(err)
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		fmt.Println("Error sending request: ", err)
+		log.Fatal(err)
 	}
 
-	body, readErr := ioutil.ReadAll(resp.Body)
-	if err := json.Unmarshal(body, &records); err != nil {
-		panic(err)
+	if resp.StatusCode != 200 {
+		fmt.Println("Error with request, http status code: ", resp.StatusCode)
 	}
 
-	if readErr != nil {
-		log.Fatal(readErr)
-	}
-
-	fmt.Println(resp.StatusCode)
-
-	return records
+	return nil
 }
 
-func GetMetrics() (result string) {
+func GetMetrics() kvd.Metrics {
 	var url = "http://localhost:4000/metrics"
 	resp, getErr := http.Get(url)
+	var metrics kvd.Metrics
 	if getErr != nil {
 		log.Fatal(getErr)
 	}
+
 	body, readErr := ioutil.ReadAll(resp.Body)
 	if readErr != nil {
 		log.Fatal(readErr)
 	}
-	return string(body)
+
+	if err := json.Unmarshal(body, &metrics); err != nil {
+		log.Fatal(err)
+	}
+
+	return metrics
 }
 
 func SetKeys(sets []kvd.Record) error {
@@ -125,12 +125,11 @@ func SetKeys(sets []kvd.Record) error {
 		fmt.Printf("failed: %v\n", err)
 	}
 
-	resp, err := client.Do(req)
+	_, err = client.Do(req)
 	if err != nil {
 		fmt.Printf("failed: %v\n", err)
 	}
 
-	fmt.Println(resp.StatusCode)
 	return nil
 }
 

@@ -2,6 +2,7 @@ package kvcli
 
 import (
 	"fmt"
+
 	"github.com/drewnix/kvd/pkg/kvcli"
 	"github.com/spf13/cobra"
 )
@@ -14,7 +15,10 @@ func init() {
 		Args:    cobra.ExactArgs(0),
 		Run: func(cmd *cobra.Command, args []string) {
 			res := kvcli.GetMetrics()
-			fmt.Println(res)
+			fmt.Println("Keys Stored:", res.KeysStored)
+			fmt.Println("Set Operations:", res.SetOps)
+			fmt.Println("Get Operations:", res.GetOps)
+			fmt.Println("Delete Operations:", res.DelOps)
 		},
 	}
 

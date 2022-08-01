@@ -5,9 +5,33 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/drewnix/kvd/pkg/kvcli"
 	"github.com/drewnix/kvd/pkg/kvd"
 	"github.com/spf13/cobra"
 )
+
+func ServeCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:     "serve",
+		Aliases: []string{"srv"},
+		Short:   "Run the KVD Service",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			var argsLen int = len(args)
+			dels := make([]string, argsLen)
+			copy(dels, args)
+
+			// for i, s := range args {
+			// 	dels[i] = s
+			// }
+			err := kvcli.DeleteKeys(dels)
+			if err != nil {
+				fmt.Print("Could not delete keys: ", err)
+				os.Exit(1)
+			}
+			return nil
+		},
+	}
+}
 
 func startService() {
 	//res := kvd.StartService

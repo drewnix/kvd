@@ -30,6 +30,17 @@ cake: 🎂
 horns: 😈
 smiley: 😁
 
+$ ./kv metrics
+Keys Stored: 0
+Set Operations: 3
+Get Operations: 3
+Delete Operations: 3
+
+```
+
+Tests pass, but currently service needs to be running.
+
+```bash
 ```
 
 ### Deliverables:
@@ -62,39 +73,27 @@ smiley: 😁
 
 ### TODO
 
-* [ ] Fix delete issue and add test case
-* [ ] Add command helpers for easier testing
-* [ ] Cleanup cli delete multi-key
-* [ ] Cleanup cli set  multi-key
-* [ ] Cleanup cli get  multi-key
-* [ ] Write README.md containing basic instructions on how to run <-- required
-* [ ] Start error handling, for example get when key is not there.
-* [ ] Write tests for everything
-* [ ]  make output from 'kv metrics' nicer - also stop printing http code
-* [ ] clean up all the extra printing from set command
-* [ ] add better error handling!!
-* [ ] Add better error handling in = split code in set
-* [ ] Refactor clean up of set, and create get and get testcase
-* [ ] Add support for transactions?
-* [ ]  Read config from a file, no http://localhost
-* [ ] When serve is called, check if service is already running on port, if it is, don't try and start a new one
-* [ ]  Change "serve" -> "start"
-* [ ] Add command "stop"
-* [ ] Stats command: Pretty print metrics from server
-* [ ] Implement stats system
-* [ ] Stats - Track Keys stored / loaded
-  * [ ] Handle deletion case
 * [ ] Stats - Track size of all values
   * [ ] On load track size of added?
   * [ ] On delete remove size of added?
+* [ ] Fix metrics 'Keys Stored' issue, currently not updating
+* [ ] Fix delete issue and add test case
+* [ ] Add command helpers for easier testing
+* [ ] Start error handling, for example get when key is not there.
+* [ ] Add better error handling
+* [ ] Add better error handling in = split code in set
+* [ ] Add support for transactions
+* [ ] When serve is called, check if service is already running on port, if it is, don't try and start a new one
+* [ ] Stats - Track Keys stored / loaded
+  * [ ] Handle deletion case
 * [ ] Stats - Track total number of operations done
 
-### TestCases
+### Test Cases to Implement
 * [ ] Test invalid input to set
 * [ ] Delete non-existent key
 * [ ] Get non-existent key
 * [ ] Set non-existent key
-* [ ] Set existing (over write) key
+* [ ] Set existing (overwrite) key
 * [ ] API get single key
 * [ ] API get multiple keys
 * [ ] API set single key
@@ -108,17 +107,25 @@ smiley: 😁
 * [ ] Serve shutdown test
 
 ### Done
+* [X] Write README.md containing basic instructions on how to run <-- required
 * [X] Modify cli get multi-key
 * [X] Modify cli put multi-key
 * [X] Supper multi-key in service
 * [X] Implement cli get 1 key
 * [X] Implement cli put 1 key
 * [X] Implement cli delete 1 key
-* [X] Rename put to set
 * [X] Build basic stats / metrics subsystem
 * [X] Create command for reading stats
 * [X] Refactor DB subsystem into db.go
 * [X] Create Deletion Test
+* [X] Cleanup cli delete multi-key
+* [X] Cleanup cli set multi-key
+* [X] Cleanup cli get multi-key
+* [X] make output from 'kv metrics' nicer - also stop printing http code
+* [X] Implement metrics system
+* [X] Refactor clean up of set, and create get and get testcase
+* [X] Clean up all the extra printing from set command
+* [X] Stats command: Pretty print metrics from server
 
 
 ## Design

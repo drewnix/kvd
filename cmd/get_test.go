@@ -25,30 +25,13 @@ func getHelper(gets []string) error {
 }
 
 func TestGet(t *testing.T) {
-	setCmd := SetCmd()
-	b := bytes.NewBufferString("")
-	setCmd.SetOut(b)
-	setCmd.SetArgs([]string{"andrew=king", "echo=prince", "ann=queen"})
-	out, err := ioutil.ReadAll(b)
-	fmt.Println("Executing")
-	setCmd.Execute()
-
-	getCmd := GetCmd()
-	getCmd.SetOut(b)
-	getCmd.SetArgs([]string{"andrew", "echo"})
-	out, err = ioutil.ReadAll(b)
-	getCmd.Execute()
+	err := setHelper([]string{"test=true", "cat=meow", "dog=woof"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(string(out))
-	//if string(out) != "hi-via-args" {
-	//	t.Fatalf("expected \"%s\" got \"%s\"", "hi-via-args", string(out))
-	//}
-	//args := os.Args[0:1]
-	//args = append(args, "foo", "bar")
-	//err := run(args)
-	//if err != nil {
-	//	t.Errorf("test yielded error: %s", err.Error())
-	//}
+
+	err = getHelper([]string{"test", "cat"})
+	if err != nil {
+		t.Fatal(err)
+	}
 }
