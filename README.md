@@ -65,8 +65,6 @@ $ make test
 
 ### Functional Requirements
 
-##### Satisfied:
-
 * [X] Keys can be any string, values any binary data.
 * [X] Key Value code should be original
 * [X] CLI can be used to get or set the value for a single key from the server.
@@ -77,14 +75,13 @@ $ make test
   * [X] Total number of keys stored
   * [X] Total size of all values
   * [X] Total number of get, set, and delete operations on keys
-
-##### Incomplete:
-
-* [ ] Support updating all keys or none if they can't all be updated (no partial updates)
-* [ ] Highly concurrent
 * [ ] Operations on different keys should have minimal contention.
-  * Partially complete - A BulkSet (which is default on multiple key update) will share a 
-    single mutex lock. 
+  * Partially complete - A BulkSet (which is default on multiple key update) will share a
+    single mutex lock.
+* [ ] Support updating all keys or none if they can't all be updated (no partial updates)
+  * Could use rollback (described under "Thoughts for future improvement") 
+* [ ] Highly concurrent
+  * Could use fasthttp based (described under "Thoughts for future improvement") 
 * [ ] Optimize for read-heavy workflow
 
 ### Test Cases to Implement
