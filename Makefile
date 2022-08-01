@@ -6,6 +6,9 @@ build:
 run:
 	go run main.go
 
+serve:
+	go run main.go serve
+
 test:
 	go test -v ./...
 
