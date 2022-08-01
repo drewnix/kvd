@@ -4,8 +4,8 @@
 KVD is a in-memory key-value store and CLI client.
 
 Major features:
-* REST API offering single key or multiple key operations following a 
-  straightforward API.
+* REST API offering single key access or multiple key operations following 
+  a straightforward API.
 * CLI `kv` built using Cobra CLI framework offering the ability to set, 
   get, or delete one or many keys in the key store.
 * Metrics subsystem presents: keys stored, # set ops, # get ops, # delete 
@@ -21,22 +21,32 @@ Here is an example of basic usage
 
 ```bash
 $ ./kv serve &
-[1] 79789
-Kvd started. Press ctrl-c to stop.   
+[1] 88547
+Kvd started. Press ctrl-c to stop.                                                                                                                                                                                                      
 
 $ ./kv set cake=🎂 horns=😈 smiley=😁
 Keys set
 
-$ ./kv get cake horns smiley         
+$ ./kv get cake horns smiley
 cake: 🎂
 horns: 😈
 smiley: 😁
 
 $ ./kv metrics
-Keys Stored: 0
+Keys Stored: 3
+Bytes Stored (Values): 60
 Set Operations: 3
 Get Operations: 3
-Delete Operations: 3
+Delete Operations: 0
+
+$ ./kv del horns
+
+$ ./kv metrics
+Keys Stored: 2
+Bytes Stored (Values): 40
+Set Operations: 3
+Get Operations: 3
+Delete Operations: 1
 
 ```
 
@@ -73,26 +83,9 @@ $ make test
 * [ ] Support updating all keys or none if they can't all be updated (no partial updates)
 * [ ] Highly concurrent
 * [ ] Operations on different keys should have minimal contention.
+  * Partially complete - A BulkSet (which is default on multiple key update) will share a 
+    single mutex lock. 
 * [ ] Optimize for read-heavy workflow
-
-### TODO
-
-* [ ] Add accounting for deletion of values
-* [ ] If deletion on invalid key return ErrInvalidKey
-* [ ] Stats - Track size of all values
-  * [ ] On load track size of added?
-  * [ ] On delete remove size of added?
-* [ ] Fix metrics 'Keys Stored' issue, currently not updating
-* [ ] Fix delete issue and add test case
-* [ ] Add command helpers for easier testing
-* [ ] Start error handling, for example get when key is not there.
-* [ ] Add better error handling
-* [ ] Add better error handling in = split code in set
-* [ ] Add support for transactions
-* [ ] When serve is called, check if service is already running on port, if it is, don't try and start a new one
-* [ ] Stats - Track Keys stored / loaded
-  * [ ] Handle deletion case
-* [ ] Stats - Track total number of operations done
 
 ### Test Cases to Implement
 * [ ] Test invalid input to set
@@ -112,86 +105,34 @@ $ make test
 * [ ] Serve daemonize test
 * [ ] Serve shutdown test
 
-### Done
-* [X] Write README.md containing basic instructions on how to run <-- required
-* [X] Modify cli get multi-key
-* [X] Modify cli put multi-key
-* [X] Supper multi-key in service
-* [X] Implement cli get 1 key
-* [X] Implement cli put 1 key
-* [X] Implement cli delete 1 key
-* [X] Build basic stats / metrics subsystem
-* [X] Create command for reading stats
-* [X] Refactor DB subsystem into db.go
-* [X] Create Deletion Test
-* [X] Cleanup cli delete multi-key
-* [X] Cleanup cli set multi-key
-* [X] Cleanup cli get multi-key
-* [X] make output from 'kv metrics' nicer - also stop printing http code
-* [X] Implement metrics system
-* [X] Refactor clean up of set, and create get and get testcase
-* [X] Clean up all the extra printing from set command
-* [X] Stats command: Pretty print metrics from server
+## Thoughts for future improvement
 
+* More Cleanup and Test Cases:
+  * Effort: S
+  * Better error handling
+    * Print deleted keys
+    * Error handling showing key
+  * Add better logging on server
+  * Finished Planned Test Cases
 
-## Design
+* For performance improvement: 
+  * Effort: M 
+  * Create benchmark to drive performance improvements using `go test -bench`
+  * Switch API to using fasthttp based HTTP implementation (perhaps fiber framework)
+    * Should improve on "highly concurrent" requirement
 
-### Server
+* Transaction support:
+  * Effort: M 
+  * Perform mutex locking by transaction - write transaction vs. read transaction
+  * Keep audit log of old values and support rollback functionality on failure
+  * Store commit records and do basic validation that commits can be done before committing
 
-#### High speed REST API 
-* Use Fiber
-* Fiber boilerplate: https://github.com/gofiber/boilerplate
+* Infrastructure and misc:
+  * Effort: S
+  * Support reading from file based config using Viper, remove references to localhost
+  * Docker and kubernetes deployment?
+  * Support maximum size limit to 
 
-#### CI / Infrastructure
-* Makefile for build
-
-#### Server <server.go>
-* Loads config
-* Loads DB
-* Initializes hash
-* handles API requests
-
-#### Transactions <tx.go>
-* A simple transaction model will be created 
-* Perhaps inspired by https://github.com/arriqaaq/flashdb/blob/main/txn.go
-  * read-only
-  * read-write
-
-#### DB <db.go>
-* In memory KV store / hash
-* Interface for all db operations
-* Set / Get / Del
-
-
-### CLI
-
-* Add daemonization? https://developpaper.com/start-and-stop-operations-of-golang-daemon/
-
-```bash
-kvcli delete key1,key2,...,keyn
-```
-
-
-```bash
-kvcli get key1,key2,key3
-```
-
-
-```bash
-kvcli set key1=val,key2=123,key3=xyz
-```
-
-### A theoretical business case for our KV Store
-
-### Ideas for future improvement
-
-* Horizontal scaling using partitioning
-- Effort: S
-
-* Building a distributed KV store
-- Effort: XL
-
-* Implement key versioning (update & rollback)
-
-* Option to evict records older then TTL
-- Effort: S
+* TTL LRU caching
+  * Effort: S
+  * Add TTL tracking and eviction for records older then TTL

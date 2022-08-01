@@ -3,6 +3,7 @@ package kvd
 import (
 	"errors"
 	"sync"
+	"unsafe"
 )
 
 type DB struct {
@@ -12,25 +13,26 @@ type DB struct {
 }
 
 type Metrics struct {
-	KeysStored int `json:"KeysStored"`
-	GetOps     int `json:"GetOps"`
-	SetOps     int `json:"SetOps"`
-	DelOps     int `json:"DelOps"`
+	KeysStored       int `json:"KeysStored"`
+	ValueBytesStored int `json:"ValueBytesStored"`
+	GetOps           int `json:"GetOps"`
+	SetOps           int `json:"SetOps"`
+	DelOps           int `json:"DelOps"`
 }
 
 var (
-	ErrInvalidKey     = errors.New("invalid key")
-	ErrDatabaseClosed = errors.New("database closed")
+	ErrInvalidKey = errors.New("invalid key")
 )
 
 func (db *DB) Init() error {
 	db.mutex = &sync.RWMutex{}
 	db.store = make(map[string]string, 0)
 	db.metrics = &Metrics{
-		KeysStored: 0,
-		GetOps:     0,
-		SetOps:     0,
-		DelOps:     0,
+		KeysStored:       0,
+		ValueBytesStored: 0,
+		GetOps:           0,
+		SetOps:           0,
+		DelOps:           0,
 	}
 
 	return nil
@@ -57,6 +59,7 @@ func (db *DB) Set(key string, value string) error {
 	db.metrics.SetOps++
 	if !existing {
 		db.metrics.KeysStored++
+
 	}
 
 	return nil
@@ -66,10 +69,19 @@ func (db *DB) BulkSet(records []Record) error {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 	for _, r := range records {
-		_, existing := db.store[r.Key]
+		oldValue, existing := db.store[r.Key]
+
 		db.store[r.Key] = r.Value
 		db.metrics.SetOps++
-		if !existing {
+
+		if existing {
+			oldVBytes := db.getStringBytes(oldValue)
+			newVBytes := db.getStringBytes(r.Value)
+			db.metrics.ValueBytesStored -= oldVBytes
+			db.metrics.ValueBytesStored += newVBytes
+		} else if !existing {
+			vBytes := db.getStringBytes(r.Value)
+			db.metrics.ValueBytesStored += vBytes
 			db.metrics.KeysStored++
 		}
 	}
@@ -98,14 +110,26 @@ func (db *DB) BulkGet(query []string) ([]Record, error) {
 	return records, nil
 }
 
+func (db *DB) getStringBytes(s string) int {
+	return len(s) + int(unsafe.Sizeof(s))
+}
+
 func (db *DB) BulkDelete(query []string) error {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
 	for _, q := range query {
-		delete(db.store, q)
-		db.metrics.DelOps++
+		v, existing := db.store[q]
+		if !existing {
+			return ErrInvalidKey
+		}
+		if existing {
+			delete(db.store, q)
+			vBytes := db.getStringBytes(v)
+			db.metrics.KeysStored--
+			db.metrics.DelOps++
+			db.metrics.ValueBytesStored -= vBytes
+		}
 	}
-
 	return nil
 }
 

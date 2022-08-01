@@ -16,6 +16,7 @@ func init() {
 		Run: func(cmd *cobra.Command, args []string) {
 			res := kvcli.GetMetrics()
 			fmt.Println("Keys Stored:", res.KeysStored)
+			fmt.Println("Bytes Stored (Values):", res.ValueBytesStored)
 			fmt.Println("Set Operations:", res.SetOps)
 			fmt.Println("Get Operations:", res.GetOps)
 			fmt.Println("Delete Operations:", res.DelOps)

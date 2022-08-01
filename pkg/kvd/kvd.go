@@ -114,8 +114,6 @@ func (kvd *Kvd) keyDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(value)) // Write the value to the response
 }
 
-// keyValuePutHandler expects to be called with a PUT request for
-// the "/v1/key/{key}" resource.
 func (kvd *Kvd) keyPutHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r) // Retrieve "key" from the request
 	key := vars["key"]
@@ -141,8 +139,6 @@ func (kvd *Kvd) keyPutHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated) // All good! Return StatusCreated
 }
 
-// keyValuePutHandler expects to be called with a PUT request for
-// the "/v1/key/{key}" resource.
 func (kvd *Kvd) keyManyPutHandler(w http.ResponseWriter, r *http.Request) {
 	var records []Record = make([]Record, 0)
 
@@ -181,8 +177,6 @@ func (kvd *Kvd) keyManyPutHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated) // All good! Return StatusCreated
 }
 
-// keyValuePutHandler expects to be called with a PUT request for
-// the "/v1/key/{key}" resource.
 func (kvd *Kvd) keyManyGetHandler(w http.ResponseWriter, r *http.Request) {
 	//var records []Record = make([]Record, 0)
 	var query []string
@@ -230,10 +224,7 @@ func (kvd *Kvd) keyManyGetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// keyValuePutHandler expects to be called with a PUT request for
-// the "/v1/key/{key}" resource.
 func (kvd *Kvd) keyManyDeletesHandler(w http.ResponseWriter, r *http.Request) {
-	//var records []Record = make([]Record, 0)
 	var query []string
 
 	if r.Body == nil {
@@ -279,7 +270,6 @@ func (kvd *Kvd) StartService(ctx context.Context) (context.Context, error) {
 
 	router := mux.NewRouter().StrictSlash(true)
 
-	//router.HandleFunc("/status", kvd.getStatus).Methods("GET")
 	router.HandleFunc("/v1/", kvd.keyManyPutHandler).Methods("PUT")
 	router.HandleFunc("/v1/", kvd.keyManyGetHandler).Methods("GET")
 	router.HandleFunc("/v1/", kvd.keyManyDeletesHandler).Methods("DELETE")

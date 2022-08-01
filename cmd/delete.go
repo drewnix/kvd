@@ -10,7 +10,7 @@ import (
 func DeleteCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:     "delete",
-		Aliases: []string{"d"},
+		Aliases: []string{"del"},
 		Short:   "Delete a set of keys in the KVD service",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var argsLen int = len(args)
