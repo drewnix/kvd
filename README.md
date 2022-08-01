@@ -18,9 +18,18 @@ make
 Here is an example of basic usage
 
 ```bash
-./kv serve
-./kv set cake=🎂 horns=😈 smiley=😁
-./kv get cake horns smiley
+$ ./kv serve &
+[1] 79789
+Kvd started. Press ctrl-c to stop.   
+
+$ ./kv set cake=🎂 horns=😈 smiley=😁
+Keys set
+
+$ ./kv get cake horns smiley         
+cake: 🎂
+horns: 😈
+smiley: 😁
+
 ```
 
 ### Deliverables:
@@ -51,12 +60,9 @@ Here is an example of basic usage
 * [ ] Operations on different keys should have minimal contention.
 * [ ] Optimize for read-heavy workflow
 
-##### Feature Creep:
-
-* [ ] Stress test
-
 ### TODO
 
+* [ ] Fix delete issue and add test case
 * [ ] Add command helpers for easier testing
 * [ ] Cleanup cli delete multi-key
 * [ ] Cleanup cli set  multi-key
@@ -84,6 +90,7 @@ Here is an example of basic usage
 * [ ] Stats - Track total number of operations done
 
 ### TestCases
+* [ ] Test invalid input to set
 * [ ] Delete non-existent key
 * [ ] Get non-existent key
 * [ ] Set non-existent key
