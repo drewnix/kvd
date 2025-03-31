@@ -3,30 +3,37 @@ package kvd
 import (
 	"errors"
 	"sync"
-	"unsafe"
+	"sync/atomic"
 )
 
+// Common errors
+var (
+	ErrInvalidKey   = errors.New("invalid key")
+	ErrKeyNotFound  = errors.New("key not found")
+	ErrEmptyKey     = errors.New("empty key not allowed")
+	ErrNilValue     = errors.New("nil value not allowed")
+)
+
+// DB represents the key-value database
 type DB struct {
 	mutex   *sync.RWMutex
 	store   map[string]string
 	metrics *Metrics
 }
 
+// Metrics tracks usage statistics for the database
 type Metrics struct {
-	KeysStored       int `json:"KeysStored"`
-	ValueBytesStored int `json:"ValueBytesStored"`
-	GetOps           int `json:"GetOps"`
-	SetOps           int `json:"SetOps"`
-	DelOps           int `json:"DelOps"`
+	KeysStored       int64 `json:"KeysStored"`
+	ValueBytesStored int64 `json:"ValueBytesStored"`
+	GetOps           int64 `json:"GetOps"`
+	SetOps           int64 `json:"SetOps"`
+	DelOps           int64 `json:"DelOps"`
 }
 
-var (
-	ErrInvalidKey = errors.New("invalid key")
-)
-
+// Init initializes the database
 func (db *DB) Init() error {
 	db.mutex = &sync.RWMutex{}
-	db.store = make(map[string]string, 0)
+	db.store = make(map[string]string)
 	db.metrics = &Metrics{
 		KeysStored:       0,
 		ValueBytesStored: 0,
@@ -38,106 +45,183 @@ func (db *DB) Init() error {
 	return nil
 }
 
+// Get retrieves a value for a given key
 func (db *DB) Get(key string) (string, error) {
+	// Increment operations counter regardless of result
+	atomic.AddInt64(&db.metrics.GetOps, 1)
+	
+	if key == "" {
+		return "", ErrEmptyKey
+	}
+
 	db.mutex.RLock()
 	value, ok := db.store[key]
-	db.metrics.GetOps++
 	db.mutex.RUnlock()
 
 	if !ok {
-		return "", ErrInvalidKey
+		return "", ErrKeyNotFound
 	}
 
 	return value, nil
 }
 
+// Set stores a key-value pair
 func (db *DB) Set(key string, value string) error {
+	if key == "" {
+		return ErrEmptyKey
+	}
+
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
-	_, existing := db.store[key]
+	
+	oldValue, existing := db.store[key]
 	db.store[key] = value
-	db.metrics.SetOps++
-	if !existing {
-		db.metrics.KeysStored++
-
+	atomic.AddInt64(&db.metrics.SetOps, 1)
+	
+	if existing {
+		// Update bytes stored (subtract old value size, add new value size)
+		oldBytes := len(oldValue)
+		newBytes := len(value)
+		atomic.AddInt64(&db.metrics.ValueBytesStored, int64(newBytes-oldBytes))
+	} else {
+		// New key
+		atomic.AddInt64(&db.metrics.KeysStored, 1)
+		atomic.AddInt64(&db.metrics.ValueBytesStored, int64(len(value)))
 	}
 
 	return nil
 }
 
+// BulkSet sets multiple key-value pairs atomically
 func (db *DB) BulkSet(records []Record) error {
+	if len(records) == 0 {
+		return nil
+	}
+
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
+	
+	// Validate all keys and values first
+	for _, r := range records {
+		if r.Key == "" {
+			return ErrEmptyKey
+		}
+	}
+	
+	// Process all records
 	for _, r := range records {
 		oldValue, existing := db.store[r.Key]
-
 		db.store[r.Key] = r.Value
-		db.metrics.SetOps++
-
+		
 		if existing {
-			oldVBytes := db.getStringBytes(oldValue)
-			newVBytes := db.getStringBytes(r.Value)
-			db.metrics.ValueBytesStored -= oldVBytes
-			db.metrics.ValueBytesStored += newVBytes
-		} else if !existing {
-			vBytes := db.getStringBytes(r.Value)
-			db.metrics.ValueBytesStored += vBytes
+			// Update metrics for existing key
+			oldBytes := len(oldValue)
+			newBytes := len(r.Value)
+			db.metrics.ValueBytesStored += int64(newBytes - oldBytes)
+		} else {
+			// Update metrics for new key
 			db.metrics.KeysStored++
+			db.metrics.ValueBytesStored += int64(len(r.Value))
 		}
 	}
+	
+	// Update operation count once for the entire batch
+	atomic.AddInt64(&db.metrics.SetOps, int64(len(records)))
 
 	return nil
 }
 
-func (db *DB) BulkGet(query []string) ([]Record, error) {
-	var records []Record
-	db.mutex.Lock()
-	defer db.mutex.Unlock()
-	for _, q := range query {
-		raw, ok := db.store[q]
-		if !ok {
-			return nil, ErrInvalidKey
-		}
-		var rec = Record{
-			Key:   q,
-			Value: raw,
-		}
-
-		db.metrics.GetOps++
-		records = append(records, rec)
+// BulkGet retrieves multiple values by their keys
+func (db *DB) BulkGet(keys []string) ([]Record, error) {
+	if len(keys) == 0 {
+		return []Record{}, nil
 	}
+
+	// Pre-allocate the slice for efficiency
+	records := make([]Record, 0, len(keys))
+	
+	db.mutex.RLock()
+	defer db.mutex.RUnlock()
+	
+	for _, key := range keys {
+		if key == "" {
+			return nil, ErrEmptyKey
+		}
+		
+		value, ok := db.store[key]
+		if !ok {
+			return nil, ErrKeyNotFound
+		}
+		
+		records = append(records, Record{
+			Key:   key,
+			Value: value,
+		})
+	}
+	
+	// Update operation count once for the entire batch
+	atomic.AddInt64(&db.metrics.GetOps, int64(len(keys)))
 
 	return records, nil
 }
 
-func (db *DB) getStringBytes(s string) int {
-	return len(s) + int(unsafe.Sizeof(s))
-}
+// Delete removes a key-value pair
+func (db *DB) Delete(key string) error {
+	if key == "" {
+		return ErrEmptyKey
+	}
 
-func (db *DB) BulkDelete(query []string) error {
 	db.mutex.Lock()
 	defer db.mutex.Unlock()
-	for _, q := range query {
-		v, existing := db.store[q]
-		if !existing {
-			return ErrInvalidKey
-		}
-		if existing {
-			delete(db.store, q)
-			vBytes := db.getStringBytes(v)
-			db.metrics.KeysStored--
-			db.metrics.DelOps++
-			db.metrics.ValueBytesStored -= vBytes
-		}
+	
+	value, exists := db.store[key]
+	if !exists {
+		return ErrKeyNotFound
 	}
+	
+	delete(db.store, key)
+	
+	// Update metrics
+	atomic.AddInt64(&db.metrics.DelOps, 1)
+	atomic.AddInt64(&db.metrics.KeysStored, -1)
+	atomic.AddInt64(&db.metrics.ValueBytesStored, -int64(len(value)))
+
 	return nil
 }
 
-func (db *DB) Delete(key string) error {
+// BulkDelete removes multiple key-value pairs
+func (db *DB) BulkDelete(keys []string) error {
+	if len(keys) == 0 {
+		return nil
+	}
+
 	db.mutex.Lock()
-	delete(db.store, key)
-	db.metrics.DelOps++
-	db.mutex.Unlock()
+	defer db.mutex.Unlock()
+	
+	// First, check if all keys exist
+	for _, key := range keys {
+		if key == "" {
+			return ErrEmptyKey
+		}
+		
+		_, exists := db.store[key]
+		if !exists {
+			return ErrKeyNotFound
+		}
+	}
+	
+	// Then delete all keys
+	totalBytesRemoved := int64(0)
+	for _, key := range keys {
+		value := db.store[key]
+		totalBytesRemoved += int64(len(value))
+		delete(db.store, key)
+	}
+	
+	// Update metrics
+	atomic.AddInt64(&db.metrics.DelOps, int64(len(keys)))
+	atomic.AddInt64(&db.metrics.KeysStored, -int64(len(keys)))
+	atomic.AddInt64(&db.metrics.ValueBytesStored, -totalBytesRemoved)
 
 	return nil
 }
